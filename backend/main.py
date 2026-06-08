@@ -7,6 +7,8 @@ import os
 import re
 import uuid
 from urllib.parse import unquote
+from botocore.config import Config
+
 
 
 load_dotenv()
@@ -35,6 +37,10 @@ s3_client = boto3.client(
     aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
     aws_session_token=os.getenv("AWS_SESSION_TOKEN"),
+    config=Config(
+        s3={"addressing_style": "virtual"},
+        signature_version="s3v4"
+    )
 )
 
 
@@ -113,19 +119,38 @@ def list_files():
             if obj["Key"].endswith("/"):
                 continue
 
+            stored_name = obj["Key"].replace("uploads/", "", 1)
+            visible_name = stored_name
+
+            # Quita el UUID inicial para mostrar solo el nombre original
+            if "-" in stored_name:
+                parts = stored_name.split("-", 5)
+                if len(parts) == 6:
+                    visible_name = parts[5]
+
+            download_url = s3_client.generate_presigned_url(
+                ClientMethod="get_object",
+                Params={
+                    "Bucket": S3_BUCKET_NAME,
+                    "Key": obj["Key"],
+                    "ResponseContentDisposition": f'attachment; filename="{visible_name}"'
+                },
+                ExpiresIn=3600,
+            )
+
             files.append({
                 "key": obj["Key"],
-                "name": obj["Key"].replace("uploads/", "", 1),
+                "name": visible_name,
+                "storedName": stored_name,
                 "size": obj["Size"],
                 "lastModified": obj["LastModified"].isoformat(),
-                "url": f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{obj['Key']}"
+                "url": download_url
             })
 
         return {"files": files}
 
     except Exception:
         raise HTTPException(status_code=500, detail="No se pudo listar los archivos")
-
 
 @app.delete("/api/files/{key:path}")
 def delete_file(key: str):

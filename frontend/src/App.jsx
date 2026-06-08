@@ -3,16 +3,21 @@ import axios from "axios";
 import "./App.css";
 
 const API_URL = "http://127.0.0.1:8000";
+const MAX_SIZE = 100 * 1024 * 1024;
 
 function App() {
   const [files, setFiles] = useState([]);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [message, setMessage] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [fileInputKey, setFileInputKey] = useState(Date.now());
 
   const loadFiles = async () => {
     try {
       const response = await axios.get(`${API_URL}/api/files`);
       setFiles(response.data.files);
-    } catch (error) {
-      console.error(error);
+    } catch {
+      setMessage("No se pudo cargar el listado de archivos.");
     }
   };
 
@@ -20,24 +25,169 @@ function App() {
     loadFiles();
   }, []);
 
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    setMessage("");
+
+    if (!file) return;
+
+    setSelectedFile(file);
+  };
+
+  const clearSelectedFile = () => {
+    setSelectedFile(null);
+    setMessage("");
+    setFileInputKey(Date.now());
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      setMessage("Debes seleccionar un archivo antes de subir.");
+      return;
+    }
+
+    const extension = selectedFile.name
+      .substring(selectedFile.name.lastIndexOf("."))
+      .toLowerCase();
+
+    if (![".mp4", ".mov"].includes(extension)) {
+      setMessage("Archivo inválido. Solo se permiten archivos MP4 o MOV.");
+      return;
+    }
+
+    if (selectedFile.size <= 0) {
+      setMessage("El archivo no puede estar vacío.");
+      return;
+    }
+
+    if (selectedFile.size > MAX_SIZE) {
+      setMessage("El archivo supera el máximo permitido de 100 MB.");
+      return;
+    }
+
+    try {
+      setUploading(true);
+      setMessage("Solicitando URL firmada...");
+
+      const fileType = selectedFile.name.toLowerCase().endsWith(".mov")
+        ? "video/quicktime"
+        : "video/mp4";
+
+      const response = await axios.post(`${API_URL}/api/upload/presigned-url`, {
+        fileName: selectedFile.name,
+        fileType,
+        fileSize: selectedFile.size,
+      });
+
+      await axios.put(response.data.presignedUrl, selectedFile, {
+        headers: {
+          "Content-Type": fileType,
+        },
+      });
+
+      setMessage("Archivo subido correctamente.");
+      setSelectedFile(null);
+      setFileInputKey(Date.now());
+      await loadFiles();
+    } catch {
+      setMessage("No se pudo subir el archivo.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDelete = async (key) => {
+    const confirmDelete = window.confirm(
+      "¿Seguro que deseas eliminar este archivo?"
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      await axios.delete(`${API_URL}/api/files/${encodeURIComponent(key)}`);
+      setMessage("Archivo eliminado correctamente.");
+      await loadFiles();
+    } catch {
+      setMessage("No se pudo eliminar el archivo.");
+    }
+  };
+
   return (
-    <div className="container">
+    <main className="container">
       <h1>ArchivaCloud P-11</h1>
+      <p>Portal de carga de archivos MP4 y MOV a Amazon S3.</p>
 
-      <h2>Archivos almacenados</h2>
+      <section className="card">
+        <h2>Subir archivo</h2>
 
-      {files.length === 0 ? (
-        <p>No hay archivos disponibles.</p>
-      ) : (
-        <ul>
-          {files.map((file) => (
-            <li key={file.key}>
-              {file.name}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+        <input
+          key={fileInputKey}
+          type="file"
+          accept=".mp4,.mov"
+          onChange={handleFileChange}
+        />
+
+        <button onClick={handleUpload} disabled={uploading}>
+          {uploading ? "Subiendo..." : "Subir archivo"}
+        </button>
+
+        {selectedFile && (
+          <div className="selected-file">
+            <span>
+              Archivo seleccionado: <strong>{selectedFile.name}</strong>
+            </span>
+
+            <button
+              type="button"
+              className="clear-button"
+              onClick={clearSelectedFile}
+            >
+              X
+            </button>
+          </div>
+        )}
+
+        {message && <p className="message">{message}</p>}
+      </section>
+
+      <section className="card">
+        <h2>Archivos almacenados</h2>
+
+        {files.length === 0 ? (
+          <p>No hay archivos disponibles.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Tamaño</th>
+                <th>Fecha</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {files.map((file) => (
+                <tr key={file.key}>
+                  <td>{file.name}</td>
+                  <td>{(file.size / 1024 / 1024).toFixed(2)} MB</td>
+                  <td>{new Date(file.lastModified).toLocaleString()}</td>
+                  <td>
+                    <a href={file.url} download>
+                      Descargar
+                    </a>
+
+                    <button onClick={() => handleDelete(file.key)}>
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+    </main>
   );
 }
 
