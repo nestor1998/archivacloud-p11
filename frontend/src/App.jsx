@@ -169,7 +169,12 @@ function App() {
             <tbody>
               {files.map((file) => (
                 <tr key={file.key}>
-                  <td>{file.name}</td>
+                  <td>
+                      {file.name}
+                      {file.isDuplicateName && (
+                        <span className="duplicate-badge">Duplicado</span>
+                      )}
+                    </td>
                   <td>{(file.size / 1024 / 1024).toFixed(2)} MB</td>
                   <td>{new Date(file.lastModified).toLocaleString()}</td>
                   <td>

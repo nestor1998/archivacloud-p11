@@ -114,6 +114,7 @@ def list_files():
         )
 
         files = []
+        name_counter = {}
 
         for obj in response.get("Contents", []):
             if obj["Key"].endswith("/"):
@@ -127,6 +128,9 @@ def list_files():
                 parts = stored_name.split("-", 5)
                 if len(parts) == 6:
                     visible_name = parts[5]
+
+            normalized_name = visible_name.lower()
+            name_counter[normalized_name] = name_counter.get(normalized_name, 0) + 1
 
             download_url = s3_client.generate_presigned_url(
                 ClientMethod="get_object",
@@ -144,14 +148,21 @@ def list_files():
                 "storedName": stored_name,
                 "size": obj["Size"],
                 "lastModified": obj["LastModified"].isoformat(),
-                "url": download_url
+                "url": download_url,
+                "isDuplicateName": False
             })
+
+        for file in files:
+            normalized_name = file["name"].lower()
+            if name_counter.get(normalized_name, 0) > 1:
+                file["isDuplicateName"] = True
 
         return {"files": files}
 
     except Exception:
         raise HTTPException(status_code=500, detail="No se pudo listar los archivos")
 
+    
 @app.delete("/api/files/{key:path}")
 def delete_file(key: str):
     try:
