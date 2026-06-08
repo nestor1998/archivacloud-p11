@@ -6,6 +6,8 @@ import boto3
 import os
 import re
 import uuid
+from urllib.parse import unquote
+
 
 load_dotenv()
 
@@ -96,3 +98,54 @@ def create_presigned_url(data: PresignedUrlRequest):
 
     except Exception:
         raise HTTPException(status_code=500, detail="No se pudo generar la URL de subida")
+
+@app.get("/api/files")
+def list_files():
+    try:
+        response = s3_client.list_objects_v2(
+            Bucket=S3_BUCKET_NAME,
+            Prefix="uploads/"
+        )
+
+        files = []
+
+        for obj in response.get("Contents", []):
+            if obj["Key"].endswith("/"):
+                continue
+
+            files.append({
+                "key": obj["Key"],
+                "name": obj["Key"].replace("uploads/", "", 1),
+                "size": obj["Size"],
+                "lastModified": obj["LastModified"].isoformat(),
+                "url": f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{obj['Key']}"
+            })
+
+        return {"files": files}
+
+    except Exception:
+        raise HTTPException(status_code=500, detail="No se pudo listar los archivos")
+
+
+@app.delete("/api/files/{key:path}")
+def delete_file(key: str):
+    try:
+        decoded_key = unquote(key)
+
+        if not decoded_key.startswith("uploads/"):
+            raise HTTPException(status_code=400, detail="Key inválida")
+
+        s3_client.delete_object(
+            Bucket=S3_BUCKET_NAME,
+            Key=decoded_key
+        )
+
+        return {
+            "message": "Archivo eliminado correctamente",
+            "key": decoded_key
+        }
+
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail="No se pudo eliminar el archivo")
