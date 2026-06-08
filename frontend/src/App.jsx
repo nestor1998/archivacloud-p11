@@ -40,6 +40,16 @@ function App() {
     setFileInputKey(Date.now());
   };
 
+  const calculateSHA256 = async (file) => {
+  const arrayBuffer = await file.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+
+  return hashArray
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+};
+
   const handleUpload = async () => {
     if (!selectedFile) {
       setMessage("Debes seleccionar un archivo antes de subir.");
@@ -67,6 +77,10 @@ function App() {
 
     try {
       setUploading(true);
+      setMessage("Calculando hash SHA-256...");
+
+      const fileHash = await calculateSHA256(selectedFile);
+
       setMessage("Solicitando URL firmada...");
 
       const fileType = selectedFile.name.toLowerCase().endsWith(".mov")
@@ -77,11 +91,13 @@ function App() {
         fileName: selectedFile.name,
         fileType,
         fileSize: selectedFile.size,
+        fileHash,
       });
 
       await axios.put(response.data.presignedUrl, selectedFile, {
         headers: {
           "Content-Type": fileType,
+          "x-amz-meta-sha256": fileHash,
         },
       });
 
@@ -95,7 +111,6 @@ function App() {
       setUploading(false);
     }
   };
-
   const handleDelete = async (key) => {
     const confirmDelete = window.confirm(
       "¿Seguro que deseas eliminar este archivo?"
@@ -169,23 +184,31 @@ function App() {
             <tbody>
               {files.map((file) => (
                 <tr key={file.key}>
-                  <td>
-                      {file.name}
-                      {file.isDuplicateName && (
-                        <span className="duplicate-badge">Duplicado</span>
-                      )}
-                    </td>
-                  <td>{(file.size / 1024 / 1024).toFixed(2)} MB</td>
-                  <td>{new Date(file.lastModified).toLocaleString()}</td>
-                  <td>
-                    <a href={file.url} download>
-                      Descargar
-                    </a>
+                    <td data-label="Nombre">
+                      <div className="file-name">
+                        {file.name}
+                      </div>
 
-                    <button onClick={() => handleDelete(file.key)}>
-                      Eliminar
-                    </button>
-                  </td>
+                      <div className="badges">
+                        {file.isDuplicateName && (
+                          <span className="duplicate-badge">
+                            Duplicado por nombre
+                          </span>
+                        )}
+
+                        {file.isDuplicateHash && (
+                          <span className="duplicate-badge hash-badge">
+                            Duplicado por contenido
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                      <td data-label="Tamaño">{(file.size / 1024 / 1024).toFixed(2)} MB</td>
+                      <td data-label="Fecha">{new Date(file.lastModified).toLocaleString()}</td>
+                      <td data-label="Acciones">
+                        <a href={file.url} download>Descargar</a>
+                        <button onClick={() => handleDelete(file.key)}>Eliminar</button>
+                      </td>
                 </tr>
               ))}
             </tbody>

@@ -48,6 +48,7 @@ class PresignedUrlRequest(BaseModel):
     fileName: str
     fileType: str
     fileSize: int
+    fileHash: str
 
 
 @app.get("/healthz")
@@ -80,6 +81,9 @@ def create_presigned_url(data: PresignedUrlRequest):
     if data.fileSize <= 0 or data.fileSize > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="El archivo supera el máximo permitido de 100 MB")
 
+    if not data.fileHash or len(data.fileHash) != 64:
+        raise HTTPException(status_code=400, detail="Hash SHA-256 inválido")
+
     unique_id = str(uuid.uuid4())
     key = f"uploads/{unique_id}-{clean_name}"
 
@@ -90,6 +94,9 @@ def create_presigned_url(data: PresignedUrlRequest):
                 "Bucket": S3_BUCKET_NAME,
                 "Key": key,
                 "ContentType": data.fileType,
+                "Metadata": {
+                    "sha256": data.fileHash
+                }
             },
             ExpiresIn=3600,
         )
@@ -115,15 +122,23 @@ def list_files():
 
         files = []
         name_counter = {}
+        hash_counter = {}
 
         for obj in response.get("Contents", []):
             if obj["Key"].endswith("/"):
                 continue
 
+            head = s3_client.head_object(
+                Bucket=S3_BUCKET_NAME,
+                Key=obj["Key"]
+            )
+
+            metadata = head.get("Metadata", {})
+            file_hash = metadata.get("sha256")
+
             stored_name = obj["Key"].replace("uploads/", "", 1)
             visible_name = stored_name
 
-            # Quita el UUID inicial para mostrar solo el nombre original
             if "-" in stored_name:
                 parts = stored_name.split("-", 5)
                 if len(parts) == 6:
@@ -131,6 +146,9 @@ def list_files():
 
             normalized_name = visible_name.lower()
             name_counter[normalized_name] = name_counter.get(normalized_name, 0) + 1
+
+            if file_hash:
+                hash_counter[file_hash] = hash_counter.get(file_hash, 0) + 1
 
             download_url = s3_client.generate_presigned_url(
                 ClientMethod="get_object",
@@ -149,19 +167,25 @@ def list_files():
                 "size": obj["Size"],
                 "lastModified": obj["LastModified"].isoformat(),
                 "url": download_url,
-                "isDuplicateName": False
+                "sha256": file_hash,
+                "isDuplicateName": False,
+                "isDuplicateHash": False
             })
 
         for file in files:
             normalized_name = file["name"].lower()
+
             if name_counter.get(normalized_name, 0) > 1:
                 file["isDuplicateName"] = True
 
+            if file["sha256"] and hash_counter.get(file["sha256"], 0) > 1:
+                file["isDuplicateHash"] = True
+
         return {"files": files}
 
-    except Exception:
+    except Exception as e:
+        print("ERROR LISTANDO ARCHIVOS:", e)
         raise HTTPException(status_code=500, detail="No se pudo listar los archivos")
-
     
 @app.delete("/api/files/{key:path}")
 def delete_file(key: str):
