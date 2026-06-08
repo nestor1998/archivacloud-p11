@@ -16,3 +16,9 @@ P-11
 - Backend: FastAPI
 - Frontend: React + Vite
 - Almacenamiento: Amazon S3
+
+
+El nombre asignado era archivacloud-p11, pero AWS S3 exige nombres globalmente únicos. Como el nombre ya estaba ocupado, se utilizó archivacloud-p11eva3 manteniendo la pareja P-11 y la región us-west-2.
+
+No se creó usuario IAM porque AWS Academy no permite iam:CreateUser.
+Se usaron credenciales temporales del laboratorio voclabs.
