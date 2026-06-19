@@ -198,7 +198,7 @@ function App() {
 
                         {file.isDuplicateHash && (
                           <span className="duplicate-badge hash-badge">
-                            Duplicado por contenido
+                            Duplicado por hash
                           </span>
                         )}
                       </div>
