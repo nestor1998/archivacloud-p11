@@ -1,7 +1,13 @@
+/* =======================================================
+   CONFIGURACIÓN GLOBAL
+   ======================================================= */
+
+/* Aplica box-sizing para facilitar el cálculo de tamaños */
 * {
   box-sizing: border-box;
 }
 
+/* Estilos generales de la página */
 body {
   margin: 0;
   min-height: 100vh;
@@ -10,11 +16,18 @@ body {
   color: #0f172a;
 }
 
+/* Contenedor principal centrado */
 .container {
   width: min(1180px, 92%);
   margin: 48px auto;
 }
 
+
+/* =======================================================
+   TÍTULOS Y TEXTO
+   ======================================================= */
+
+/* Título principal */
 h1 {
   margin: 0 0 8px;
   font-size: 34px;
@@ -22,12 +35,26 @@ h1 {
   color: #0f172a;
 }
 
+/* Texto descriptivo debajo del título */
 h1 + p {
   margin: 0 0 28px;
   font-size: 16px;
   color: #64748b;
 }
 
+/* Títulos de secciones */
+h2 {
+  margin: 0 0 18px;
+  font-size: 22px;
+  color: #1e293b;
+}
+
+
+/* =======================================================
+   TARJETAS (CARDS)
+   ======================================================= */
+
+/* Contenedor visual utilizado para separar secciones */
 .card {
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid #e2e8f0;
@@ -37,12 +64,12 @@ h1 + p {
   box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
 }
 
-h2 {
-  margin: 0 0 18px;
-  font-size: 22px;
-  color: #1e293b;
-}
 
+/* =======================================================
+   INPUT DE ARCHIVOS
+   ======================================================= */
+
+/* Estilo del selector de archivos */
 input[type="file"] {
   width: 100%;
   max-width: 420px;
@@ -53,6 +80,12 @@ input[type="file"] {
   color: #334155;
 }
 
+
+/* =======================================================
+   BOTONES
+   ======================================================= */
+
+/* Estilo base para todos los botones */
 button {
   border: none;
   border-radius: 10px;
@@ -64,21 +97,30 @@ button {
   transition: 0.2s ease;
 }
 
+/* Efecto hover */
 button:hover {
   background: #1d4ed8;
   transform: translateY(-1px);
 }
 
+/* Botón deshabilitado */
 button:disabled {
   background: #94a3b8;
   cursor: not-allowed;
   transform: none;
 }
 
+/* Espaciado para botón dentro de la tarjeta */
 .card > button {
   margin-left: 12px;
 }
 
+
+/* =======================================================
+   MENSAJES DE ESTADO
+   ======================================================= */
+
+/* Mensajes informativos mostrados al usuario */
 .message {
   margin-top: 16px;
   padding: 12px 14px;
@@ -89,6 +131,12 @@ button:disabled {
   font-weight: 700;
 }
 
+
+/* =======================================================
+   ARCHIVO SELECCIONADO
+   ======================================================= */
+
+/* Contenedor del archivo actualmente seleccionado */
 .selected-file {
   margin-top: 16px;
   padding: 14px 16px;
@@ -101,21 +149,30 @@ button:disabled {
   gap: 16px;
 }
 
+/* Nombre del archivo seleccionado */
 .selected-file span {
   color: #1e293b;
   word-break: break-word;
 }
 
+/* Botón para limpiar selección */
 .clear-button {
   min-width: 38px;
   padding: 8px 12px;
   background: #ef4444;
 }
 
+/* Hover botón eliminar selección */
 .clear-button:hover {
   background: #dc2626;
 }
 
+
+/* =======================================================
+   TABLA DE ARCHIVOS
+   ======================================================= */
+
+/* Tabla principal */
 table {
   width: 100%;
   border-collapse: separate;
@@ -126,6 +183,7 @@ table {
   background: white;
 }
 
+/* Encabezados de tabla */
 thead th {
   background: #0f172a;
   color: #ffffff;
@@ -133,9 +191,10 @@ thead th {
   letter-spacing: 0.03em;
   text-transform: uppercase;
   padding: 14px;
-  text-align: left;
+  text-align: center;
 }
 
+/* Celdas de datos */
 tbody td {
   padding: 16px 14px;
   border-top: 1px solid #e2e8f0;
@@ -144,10 +203,12 @@ tbody td {
   font-size: 15px;
 }
 
+/* Efecto al pasar el mouse sobre una fila */
 tbody tr:hover {
   background: #f8fafc;
 }
 
+/* Primera columna (nombre del archivo) */
 td:first-child {
   font-weight: 700;
   color: #0f172a;
@@ -155,10 +216,17 @@ td:first-child {
   word-break: break-word;
 }
 
+/* Última columna (acciones) */
 td:last-child {
   white-space: nowrap;
 }
 
+
+/* =======================================================
+   ENLACES DE DESCARGA
+   ======================================================= */
+
+/* Botón de descarga */
 a {
   display: inline-block;
   padding: 9px 12px;
@@ -170,19 +238,33 @@ a {
   margin-right: 8px;
 }
 
+/* Hover botón descarga */
 a:hover {
   background: #bae6fd;
 }
 
+
+/* =======================================================
+   BOTÓN ELIMINAR
+   ======================================================= */
+
+/* Botón eliminar dentro de la tabla */
 td button {
   margin-left: 0;
   background: #ef4444;
 }
 
+/* Hover botón eliminar */
 td button:hover {
   background: #dc2626;
 }
 
+
+/* =======================================================
+   INDICADORES DE DUPLICADOS
+   ======================================================= */
+
+/* Etiqueta para archivos duplicados por nombre */
 .duplicate-badge {
   display: inline-block;
   margin-top: 6px;
@@ -196,12 +278,20 @@ td button:hover {
   white-space: nowrap;
 }
 
+/* Etiqueta para archivos duplicados por hash */
 .hash-badge {
   background: #fee2e2;
   color: #991b1b;
 }
 
+
+/* =======================================================
+   DISEÑO RESPONSIVO
+   ======================================================= */
+
+/* Adaptación para dispositivos móviles */
 @media (max-width: 850px) {
+
   h1 {
     font-size: 28px;
   }
@@ -229,6 +319,7 @@ td button:hover {
     width: 100%;
   }
 
+  /* Convierte la tabla en formato vertical para móviles */
   table,
   thead,
   tbody,
@@ -238,10 +329,12 @@ td button:hover {
     display: block;
   }
 
+  /* Oculta encabezados tradicionales */
   thead {
     display: none;
   }
 
+  /* Tarjeta individual para cada registro */
   tbody tr {
     border: 1px solid #e2e8f0;
     border-radius: 14px;
@@ -255,6 +348,7 @@ td button:hover {
     padding: 10px 0;
   }
 
+  /* Muestra etiquetas de columnas en vista móvil */
   tbody td::before {
     content: attr(data-label);
     display: block;
@@ -269,6 +363,7 @@ td button:hover {
     white-space: normal;
   }
 
+  /* Botones ocupan todo el ancho en móviles */
   a,
   td button {
     width: 100%;
