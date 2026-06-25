@@ -104,6 +104,47 @@ def sanitize_filename(filename: str) -> str:
     return filename
 
 
+
+####
+def get_dynamodb_table():
+    dynamodb = boto3.resource(
+        "dynamodb",
+        region_name=AWS_REGION,
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+        aws_session_token=os.getenv("AWS_SESSION_TOKEN")
+    )
+
+    return dynamodb.Table("database_dynamo")
+
+
+def upload_dynamodb(item):
+    table = get_dynamodb_table()
+
+    table.put_item(
+        Item={
+            "id_tabla": item["id_tabla"],
+            "nombre_proyecto": item["nombre_proyecto"],
+            "descripcion": item["descripcion"],
+            "presigned_url": item["presigned_url"],
+            "key_s3": item["key_s3"]
+        }
+    )
+
+def delete_dynamodb(id_tabla):
+    table = get_dynamodb_table()
+
+    table.delete_item(
+        Key={
+            "id_tabla": id_tabla,
+            "nombre_proyecto": "ArchivaCloud P-11"
+        }
+    )    
+
+####
+
+
+
 # Endpoint que genera una URL prefirmada para subir archivos a S3
 @app.post("/api/upload/presigned-url")
 def create_presigned_url(data: PresignedUrlRequest):
@@ -158,6 +199,13 @@ def create_presigned_url(data: PresignedUrlRequest):
 
         # Construye una URL pública de referencia
         public_url = f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{key}"
+        upload_dynamodb({
+                "id_tabla": key,
+                "nombre_proyecto": "ArchivaCloud P-11",
+                "descripcion": f"Archivo {clean_name} con URL prefirmada de S3",
+                "presigned_url": presigned_url,
+                "key_s3": key
+            })
 
         # Devuelve la información al frontend
         return {
@@ -285,10 +333,11 @@ def delete_file(key: str):
             Bucket=S3_BUCKET_NAME,
             Key=decoded_key
         )
+        delete_dynamodb(decoded_key)
 
         # Respuesta exitosa
         return {
-            "message": "Archivo eliminado correctamente",
+            "message": "Archivo eliminado correctamente de S3 y DynamoDB",
             "key": decoded_key
         }
 
